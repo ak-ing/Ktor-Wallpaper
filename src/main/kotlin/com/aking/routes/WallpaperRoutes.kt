@@ -1,9 +1,7 @@
 package com.aking.routes
 
 import com.aking.data.WallpaperRepository
-import com.aking.model.WallpaperListResponse
-import io.ktor.http.*
-import io.ktor.server.response.*
+import com.aking.model.*
 import io.ktor.server.routing.*
 
 fun Route.wallpaperRoutes() {
@@ -15,55 +13,52 @@ fun Route.wallpaperRoutes() {
 
             val wallpapers = WallpaperRepository.getAllWallpapers(page, pageSize)
             val total = WallpaperRepository.getWallpaperCount()
-            val hasMore = page * pageSize < total
 
-            call.respond(WallpaperListResponse(wallpapers, page, pageSize, total, hasMore))
+            call.success(PageData.of(wallpapers, page, pageSize, total))
         }
 
         // GET /api/wallpapers/featured - Featured wallpapers for home
         get("/featured") {
             val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 6
             val wallpapers = WallpaperRepository.getFeaturedWallpapers(limit)
-            call.respond(wallpapers)
+            call.success(wallpapers)
         }
 
         // GET /api/wallpapers/editors-choice - Editor's choice wallpapers
         get("/editors-choice") {
             val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 6
             val wallpapers = WallpaperRepository.getEditorsChoiceWallpapers(limit)
-            call.respond(wallpapers)
+            call.success(wallpapers)
         }
 
         // GET /api/wallpapers/new - New arrivals
         get("/new") {
             val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 10
             val wallpapers = WallpaperRepository.getNewArrivals(limit)
-            call.respond(wallpapers)
+            call.success(wallpapers)
         }
 
         // GET /api/wallpapers/{id} - Single wallpaper by ID
         get("/{id}") {
             val id = call.parameters["id"]?.toIntOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid ID"))
+                ?: badRequest("Invalid ID")
 
             val wallpaper = WallpaperRepository.getWallpaperById(id)
-            if (wallpaper == null) {
-                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Wallpaper not found"))
-            } else {
-                call.respond(wallpaper)
-            }
+                ?: notFound("Wallpaper not found")
+
+            call.success(wallpaper)
         }
 
         // POST /api/wallpapers/{id}/download - Increment download count
         post("/{id}/download") {
             val id = call.parameters["id"]?.toIntOrNull()
-                ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid ID"))
+                ?: badRequest("Invalid ID")
 
-            if (WallpaperRepository.incrementDownloads(id)) {
-                call.respond(HttpStatusCode.OK, mapOf("success" to true))
-            } else {
-                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Wallpaper not found"))
+            if (!WallpaperRepository.incrementDownloads(id)) {
+                notFound("Wallpaper not found")
             }
+
+            call.success<Unit>(message = "Download recorded")
         }
     }
 }

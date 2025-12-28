@@ -1,9 +1,7 @@
 package com.aking.routes
 
 import com.aking.data.WallpaperRepository
-import com.aking.model.SearchResponse
-import io.ktor.http.*
-import io.ktor.server.response.*
+import com.aking.model.*
 import io.ktor.server.routing.*
 
 /**
@@ -16,12 +14,11 @@ fun Route.searchRoutes() {
         get {
             val query = call.request.queryParameters["q"]
             if (query.isNullOrBlank()) {
-                call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Query parameter 'q' is required"))
-                return@get
+                badRequest("Query parameter 'q' is required")
             }
 
             val wallpapers = WallpaperRepository.searchWallpapers(query)
-            call.respond(SearchResponse(wallpapers, query, wallpapers.size))
+            call.success(SearchResponse(wallpapers, query, wallpapers.size))
         }
     }
 
@@ -30,19 +27,21 @@ fun Route.searchRoutes() {
         get("/popular") {
             val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 10
             val tags = WallpaperRepository.getPopularTags(limit)
-            call.respond(tags)
+            call.success(tags)
         }
 
         // GET /api/tags/{tag}/wallpapers - 按标签获取壁纸
         get("/{tag}/wallpapers") {
             val tag = call.parameters["tag"]
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Tag is required"))
+                ?: badRequest("Tag is required")
 
             val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
             val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 20
 
             val wallpapers = WallpaperRepository.getWallpapersByTag(tag, page, pageSize)
-            call.respond(wallpapers)
+            val total = WallpaperRepository.getWallpaperCountByTag(tag)
+
+            call.success(PageData.of(wallpapers, page, pageSize, total))
         }
     }
 }

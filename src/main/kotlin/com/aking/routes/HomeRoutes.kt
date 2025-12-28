@@ -2,7 +2,7 @@ package com.aking.routes
 
 import com.aking.data.WallpaperRepository
 import com.aking.model.HomeResponse
-import io.ktor.server.response.*
+import com.aking.model.success
 import io.ktor.server.routing.*
 
 /**
@@ -17,6 +17,6 @@ fun Route.homeRoutes() {
         val newArrivals = WallpaperRepository.getNewArrivals(10)
         val categories = WallpaperRepository.getAllCategories()
 
-        call.respond(HomeResponse(featured, editorsChoice, newArrivals, categories))
+        call.success(HomeResponse(featured, editorsChoice, newArrivals, categories))
     }
 }

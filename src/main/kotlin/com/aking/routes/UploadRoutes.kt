@@ -2,12 +2,11 @@ package com.aking.routes
 
 import com.aking.config.StorageConfig
 import com.aking.config.StorageType
-import com.aking.model.ApiResponse
 import com.aking.model.UploadResponse
-import io.ktor.http.*
+import com.aking.model.badRequest
+import com.aking.model.created
 import io.ktor.http.content.*
 import io.ktor.server.request.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.io.File
 import java.util.*
@@ -54,9 +53,9 @@ fun Route.uploadRoutes() {
             }
 
             if (uploadedFile != null) {
-                call.respond(HttpStatusCode.Created, ApiResponse(true, uploadedFile, "File uploaded"))
+                call.created(uploadedFile, "File uploaded")
             } else {
-                call.respond(HttpStatusCode.BadRequest, ApiResponse<UploadResponse>(false, message = "No file uploaded"))
+                badRequest("No file uploaded")
             }
         }
 
@@ -96,9 +95,9 @@ fun Route.uploadRoutes() {
             }
 
             if (uploadedFile != null) {
-                call.respond(HttpStatusCode.Created, ApiResponse(true, uploadedFile, "File uploaded"))
+                call.created(uploadedFile, "File uploaded")
             } else {
-                call.respond(HttpStatusCode.BadRequest, ApiResponse<UploadResponse>(false, message = "No file uploaded"))
+                badRequest("No file uploaded")
             }
         }
 
@@ -138,9 +137,9 @@ fun Route.uploadRoutes() {
             }
 
             if (uploadedFile != null) {
-                call.respond(HttpStatusCode.Created, ApiResponse(true, uploadedFile, "File uploaded"))
+                call.created(uploadedFile, "File uploaded")
             } else {
-                call.respond(HttpStatusCode.BadRequest, ApiResponse<UploadResponse>(false, message = "No file uploaded"))
+                badRequest("No file uploaded")
             }
         }
     }

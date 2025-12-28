@@ -35,15 +35,6 @@ data class Tag(
 )
 
 @Serializable
-data class WallpaperListResponse(
-    val wallpapers: List<Wallpaper>,
-    val page: Int,
-    val pageSize: Int,
-    val total: Int,
-    val hasMore: Boolean
-)
-
-@Serializable
 data class HomeResponse(
     val featured: List<Wallpaper>,
     val editorsChoice: List<Wallpaper>,
@@ -101,13 +92,6 @@ data class UpdateWallpaperRequest(
 )
 
 // ==================== 响应 DTO ====================
-
-@Serializable
-data class ApiResponse<T>(
-    val success: Boolean,
-    val data: T? = null,
-    val message: String? = null
-)
 
 @Serializable
 data class UploadResponse(

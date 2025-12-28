@@ -223,6 +223,13 @@ object WallpaperRepository {
             .map { it.toWallpaper() }
     }
 
+    fun getWallpaperCountByTag(tag: String): Int = transaction {
+        WallpaperTags
+            .select(WallpaperTags.wallpaperId)
+            .where { WallpaperTags.tag eq tag.lowercase() }
+            .count().toInt()
+    }
+
     // ==================== 转换方法 ====================
 
     private fun CategoryEntity.toCategory(): Category {
