@@ -43,12 +43,26 @@ fun Route.wallpaperRoutes() {
 
         // GET /api/wallpapers/{id} - Single wallpaper by ID
         get("/{id}") {
-            val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+            val id = call.parameters["id"]?.toIntOrNull()
+                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid ID"))
+
             val wallpaper = WallpaperRepository.getWallpaperById(id)
             if (wallpaper == null) {
                 call.respond(HttpStatusCode.NotFound, mapOf("error" to "Wallpaper not found"))
             } else {
                 call.respond(wallpaper)
+            }
+        }
+
+        // POST /api/wallpapers/{id}/download - Increment download count
+        post("/{id}/download") {
+            val id = call.parameters["id"]?.toIntOrNull()
+                ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid ID"))
+
+            if (WallpaperRepository.incrementDownloads(id)) {
+                call.respond(HttpStatusCode.OK, mapOf("success" to true))
+            } else {
+                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Wallpaper not found"))
             }
         }
     }

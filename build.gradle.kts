@@ -5,18 +5,31 @@ plugins {
 }
 
 group = "com.aking"
-version = "0.0.1"
+version = "1.0.0"
 
 application {
     mainClass = "com.aking.ApplicationKt"
 }
 
 dependencies {
+    // Ktor
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
+
+    // Database
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.dao)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.exposed.kotlin.datetime)
+    implementation(libs.postgresql)
+    implementation(libs.hikari)
+
+    // Logging
     implementation(libs.logback.classic)
+
+    // Test
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
 }

@@ -16,7 +16,9 @@ fun Route.categoryRoutes() {
 
         // GET /api/categories/{id} - Get category details
         get("/{id}") {
-            val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+            val id = call.parameters["id"]?.toIntOrNull()
+                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid ID"))
+
             val category = WallpaperRepository.getCategoryById(id)
             if (category == null) {
                 call.respond(HttpStatusCode.NotFound, mapOf("error" to "Category not found"))
@@ -27,7 +29,9 @@ fun Route.categoryRoutes() {
 
         // GET /api/categories/{id}/wallpapers - Wallpapers by category
         get("/{id}/wallpapers") {
-            val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+            val id = call.parameters["id"]?.toIntOrNull()
+                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid ID"))
+
             val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
             val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 20
 

@@ -4,83 +4,104 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A Ktor server application providing REST API for a wallpaper mobile app. Serves wallpapers with categories, tags, search, and featured content sections.
+Ktor server providing REST API for a wallpaper mobile app. Features categories, tags, search, featured content, file uploads, and admin CRUD operations. Uses PostgreSQL with Exposed ORM.
 
 ## Build Commands
 
 ```bash
-# Run the server (port 8080)
-./gradlew run
-
-# Build everything
-./gradlew build
-
-# Run tests
-./gradlew test
-
-# Build executable fat JAR
-./gradlew buildFatJar
-
-# Docker operations
-./gradlew buildImage
-./gradlew runDocker
+./gradlew run              # Run server on port 8080
+./gradlew build            # Build project
+./gradlew test             # Run tests
+./gradlew buildFatJar      # Build executable fat JAR
+./gradlew buildImage       # Build Docker image
+./gradlew runDocker        # Run with Docker
 ```
 
 ## Architecture
 
 ```
-src/main/kotlin/com/aking/
-├── Application.kt          # Entry point, server config, serialization setup
-├── Routing.kt              # Main routing configuration
-├── model/
-│   └── Models.kt           # Data classes: Wallpaper, Category, Tag, Response DTOs
-├── data/
-│   └── WallpaperRepository.kt  # In-memory data store with sample data
-└── routes/
-    ├── HomeRoutes.kt       # GET /api/home - aggregated home screen data
-    ├── WallpaperRoutes.kt  # /api/wallpapers endpoints
-    ├── CategoryRoutes.kt   # /api/categories endpoints
-    └── SearchRoutes.kt     # /api/search, /api/tags endpoints
+src/main/kotlin/
+├── Application.kt              # Entry point, Netty server on :8080, module initialization
+├── Routing.kt                  # Route registration, static file serving
+└── com/aking/
+    ├── config/
+    │   └── StorageConfig.kt    # Storage abstraction (LOCAL/COS), URL generation
+    ├── database/
+    │   ├── DatabaseConfig.kt   # HikariCP + PostgreSQL connection, schema init
+    │   ├── Tables.kt           # Exposed table definitions
+    │   └── Entities.kt         # Exposed DAO entities
+    ├── model/
+    │   └── Models.kt           # DTOs and request/response classes
+    ├── data/
+    │   └── WallpaperRepository.kt  # Data access layer, all DB operations
+    └── routes/
+        ├── HomeRoutes.kt       # GET /api/home - aggregated data
+        ├── WallpaperRoutes.kt  # /api/wallpapers - list, detail, featured
+        ├── CategoryRoutes.kt   # /api/categories - CRUD
+        ├── SearchRoutes.kt     # /api/search, /api/tags
+        ├── UploadRoutes.kt     # /api/upload - multipart file upload
+        └── AdminRoutes.kt      # /api/admin - CRUD management
 ```
 
-**Entry Point:** `Application.kt:10` - `main()` starts Netty on port 8080
+## Key Patterns
 
-**Configuration Pattern:** Each feature has its own `Application.configure*()` extension function:
-- `configureSerialization()` - JSON content negotiation
-- `configureRouting()` - HTTP routes
+**Configuration via Extension Functions:** `Application.module()` calls `DatabaseConfig.init()`, `configureSerialization()`, `configureRouting()`
+
+**Data Flow:** Routes → WallpaperRepository (singleton object) → Exposed transaction blocks → Entity.toModel() conversions
+
+**Storage Abstraction:** `StorageConfig` reads `STORAGE_TYPE` env var to switch between local files and Tencent COS. URL generation via `getWallpaperUrl()`/`getThumbnailUrl()`.
+
+## Environment Variables
+
+```bash
+# Database (PostgreSQL)
+DATABASE_URL=jdbc:postgresql://localhost:5432/wallpaper
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+
+# Storage
+STORAGE_TYPE=LOCAL              # or COS
+SERVER_BASE_URL=http://localhost:8080
+WALLPAPER_PATH=data/wallpapers
+THUMBNAIL_PATH=data/thumbnails
+
+# Tencent COS (when STORAGE_TYPE=COS)
+COS_SECRET_ID=
+COS_SECRET_KEY=
+COS_REGION=ap-guangzhou
+COS_BUCKET=
+COS_BASE_URL=
+```
 
 ## API Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/home` | Aggregated home screen data (featured, editors choice, new arrivals, categories) |
-| `GET /api/wallpapers` | List wallpapers with pagination (?page=1&pageSize=20) |
-| `GET /api/wallpapers/featured` | Featured wallpapers |
-| `GET /api/wallpapers/editors-choice` | Editor's choice wallpapers |
-| `GET /api/wallpapers/new` | New arrivals |
-| `GET /api/wallpapers/{id}` | Single wallpaper details |
-| `GET /api/categories` | All categories with counts |
-| `GET /api/categories/{id}/wallpapers` | Wallpapers by category |
-| `GET /api/search?q=query` | Search wallpapers |
-| `GET /api/tags/popular` | Popular tags |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/home` | GET | Aggregated home data |
+| `/api/wallpapers` | GET | Paginated list (?page, ?pageSize) |
+| `/api/wallpapers/{id}` | GET | Single wallpaper |
+| `/api/wallpapers/{id}/download` | POST | Increment download count |
+| `/api/wallpapers/featured` | GET | Featured wallpapers |
+| `/api/wallpapers/editors-choice` | GET | Editor picks |
+| `/api/wallpapers/new` | GET | Latest uploads |
+| `/api/categories` | GET | All categories with counts |
+| `/api/categories/{id}/wallpapers` | GET | Wallpapers by category |
+| `/api/search?q=` | GET | Search by name/category/tag |
+| `/api/tags/popular` | GET | Popular tags |
+| `/api/tags/{tag}/wallpapers` | GET | Wallpapers by tag |
+| `/api/upload/wallpaper` | POST | Upload wallpaper (multipart) |
+| `/api/upload/thumbnail` | POST | Upload thumbnail |
+| `/api/admin/categories` | POST/PUT/DELETE | Category management |
+| `/api/admin/wallpapers` | POST/PUT/DELETE | Wallpaper management |
+
+## Database Schema
+
+Three tables: `categories`, `wallpapers`, `wallpaper_tags` (many-to-many). Auto-created via `SchemaUtils.create()` on startup.
 
 ## Tech Stack
 
-- **Kotlin** with kotlinx.serialization
-- **Ktor** (server-core, server-netty, content-negotiation)
-- **Logback** for logging
-- **Gradle** with version catalog (versions in `gradle/libs.versions.toml`)
-
-## Testing
-
-Uses `ktor-server-test-host` with JUnit:
-
-```kotlin
-@Test
-fun testHome() = testApplication {
-    application { module() }
-    client.get("/api/home").apply {
-        assertEquals(HttpStatusCode.OK, status)
-    }
-}
-```
+- Kotlin 2.1, Ktor 3.0.3, Netty
+- Exposed 0.57 ORM with DAO pattern
+- PostgreSQL + HikariCP connection pool
+- kotlinx.serialization for JSON
+- Versions in `gradle/libs.versions.toml`
