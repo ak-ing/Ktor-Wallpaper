@@ -8,7 +8,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
 
 object WallpaperRepository {
 
@@ -16,15 +15,15 @@ object WallpaperRepository {
 
     // ==================== Category 操作 ====================
 
-    fun getAllCategories(): List<Category> = transaction {
+    suspend fun getAllCategories(): List<Category> = suspendTransaction {
         CategoryEntity.all().map { it.toCategory() }
     }
 
-    fun getCategoryById(id: Int): Category? = transaction {
+    suspend fun getCategoryById(id: Int): Category? = suspendTransaction {
         CategoryEntity.findById(id)?.toCategory()
     }
 
-    fun createCategory(request: CreateCategoryRequest): Category = transaction {
+    suspend fun createCategory(request: CreateCategoryRequest): Category = suspendTransaction {
         val now = Clock.System.now()
         CategoryEntity.new {
             name = request.name
@@ -34,16 +33,16 @@ object WallpaperRepository {
         }.toCategory()
     }
 
-    fun updateCategory(id: Int, request: UpdateCategoryRequest): Category? = transaction {
-        val entity = CategoryEntity.findById(id) ?: return@transaction null
+    suspend fun updateCategory(id: Int, request: UpdateCategoryRequest): Category? = suspendTransaction {
+        val entity = CategoryEntity.findById(id) ?: return@suspendTransaction null
         request.name?.let { entity.name = it }
         request.thumbnailUrl?.let { entity.thumbnailUrl = it }
         entity.updatedAt = Clock.System.now()
         entity.toCategory()
     }
 
-    fun deleteCategory(id: Int): Boolean = transaction {
-        val entity = CategoryEntity.findById(id) ?: return@transaction false
+    suspend fun deleteCategory(id: Int): Boolean = suspendTransaction {
+        val entity = CategoryEntity.findById(id) ?: return@suspendTransaction false
         // 删除该分类下的所有壁纸
         WallpaperEntity.find { Wallpapers.categoryId eq id }.forEach { wallpaper ->
             WallpaperTags.deleteWhere { wallpaperId eq wallpaper.id }
@@ -55,54 +54,54 @@ object WallpaperRepository {
 
     // ==================== Wallpaper 操作 ====================
 
-    fun getAllWallpapers(page: Int = 1, pageSize: Int = 20): List<Wallpaper> = transaction {
+    suspend fun getAllWallpapers(page: Int = 1, pageSize: Int = 20): List<Wallpaper> = suspendTransaction {
         WallpaperEntity.all()
             .orderBy(Wallpapers.createdAt to SortOrder.DESC)
             .limit(pageSize).offset(((page - 1) * pageSize).toLong())
             .map { it.toWallpaper() }
     }
 
-    fun getWallpaperCount(): Int = transaction {
+    suspend fun getWallpaperCount(): Int = suspendTransaction {
         WallpaperEntity.count().toInt()
     }
 
-    fun getWallpaperById(id: Int): Wallpaper? = transaction {
+    suspend fun getWallpaperById(id: Int): Wallpaper? = suspendTransaction {
         WallpaperEntity.findById(id)?.toWallpaper()
     }
 
-    fun getWallpapersByCategory(categoryId: Int, page: Int = 1, pageSize: Int = 20): List<Wallpaper> = transaction {
+    suspend fun getWallpapersByCategory(categoryId: Int, page: Int = 1, pageSize: Int = 20): List<Wallpaper> = suspendTransaction {
         WallpaperEntity.find { Wallpapers.categoryId eq categoryId }
             .orderBy(Wallpapers.createdAt to SortOrder.DESC)
             .limit(pageSize).offset(((page - 1) * pageSize).toLong())
             .map { it.toWallpaper() }
     }
 
-    fun getWallpaperCountByCategory(categoryId: Int): Int = transaction {
+    suspend fun getWallpaperCountByCategory(categoryId: Int): Int = suspendTransaction {
         WallpaperEntity.find { Wallpapers.categoryId eq categoryId }.count().toInt()
     }
 
-    fun getFeaturedWallpapers(limit: Int = 6): List<Wallpaper> = transaction {
+    suspend fun getFeaturedWallpapers(limit: Int = 6): List<Wallpaper> = suspendTransaction {
         WallpaperEntity.find { Wallpapers.isFeatured eq true }
             .orderBy(Wallpapers.createdAt to SortOrder.DESC)
             .limit(limit)
             .map { it.toWallpaper() }
     }
 
-    fun getEditorsChoiceWallpapers(limit: Int = 6): List<Wallpaper> = transaction {
+    suspend fun getEditorsChoiceWallpapers(limit: Int = 6): List<Wallpaper> = suspendTransaction {
         WallpaperEntity.find { Wallpapers.isEditorsChoice eq true }
             .orderBy(Wallpapers.createdAt to SortOrder.DESC)
             .limit(limit)
             .map { it.toWallpaper() }
     }
 
-    fun getNewArrivals(limit: Int = 10): List<Wallpaper> = transaction {
+    suspend fun getNewArrivals(limit: Int = 10): List<Wallpaper> = suspendTransaction {
         WallpaperEntity.all()
             .orderBy(Wallpapers.createdAt to SortOrder.DESC)
             .limit(limit)
             .map { it.toWallpaper() }
     }
 
-    fun searchWallpapers(query: String): List<Wallpaper> = transaction {
+    suspend fun searchWallpapers(query: String): List<Wallpaper> = suspendTransaction {
         val lowerQuery = "%${query.lowercase()}%"
 
         // 搜索壁纸名称或分类名称
@@ -130,13 +129,14 @@ object WallpaperRepository {
         (byNameOrCategory + byTag).distinctBy { it.id }
     }
 
-    fun createWallpaper(request: CreateWallpaperRequest): Wallpaper = transaction {
+    suspend fun createWallpaper(request: CreateWallpaperRequest): Wallpaper = suspendTransaction {
         val now = Clock.System.now()
         val wallpaper = WallpaperEntity.new {
             name = request.name
             filename = request.filename
             thumbnailFilename = request.thumbnailFilename
             category = CategoryEntity[request.categoryId]
+            artist = request.artistId?.let { ArtistEntity[it] }
             colors = json.encodeToString(request.colors)
             width = request.width
             height = request.height
@@ -157,13 +157,14 @@ object WallpaperRepository {
         wallpaper.toWallpaper()
     }
 
-    fun updateWallpaper(id: Int, request: UpdateWallpaperRequest): Wallpaper? = transaction {
-        val entity = WallpaperEntity.findById(id) ?: return@transaction null
+    suspend fun updateWallpaper(id: Int, request: UpdateWallpaperRequest): Wallpaper? = suspendTransaction {
+        val entity = WallpaperEntity.findById(id) ?: return@suspendTransaction null
 
         request.name?.let { entity.name = it }
         request.filename?.let { entity.filename = it }
         request.thumbnailFilename?.let { entity.thumbnailFilename = it }
         request.categoryId?.let { entity.category = CategoryEntity[it] }
+        request.artistId?.let { entity.artist = ArtistEntity[it] }
         request.colors?.let { entity.colors = json.encodeToString(it) }
         request.width?.let { entity.width = it }
         request.height?.let { entity.height = it }
@@ -185,22 +186,22 @@ object WallpaperRepository {
         entity.toWallpaper()
     }
 
-    fun deleteWallpaper(id: Int): Boolean = transaction {
-        val entity = WallpaperEntity.findById(id) ?: return@transaction false
+    suspend fun deleteWallpaper(id: Int): Boolean = suspendTransaction {
+        val entity = WallpaperEntity.findById(id) ?: return@suspendTransaction false
         WallpaperTags.deleteWhere { wallpaperId eq id }
         entity.delete()
         true
     }
 
-    fun incrementDownloads(id: Int): Boolean = transaction {
-        val entity = WallpaperEntity.findById(id) ?: return@transaction false
+    suspend fun incrementDownloads(id: Int): Boolean = suspendTransaction {
+        val entity = WallpaperEntity.findById(id) ?: return@suspendTransaction false
         entity.downloads += 1
         true
     }
 
     // ==================== Tag 操作 ====================
 
-    fun getPopularTags(limit: Int = 10): List<Tag> = transaction {
+    suspend fun getPopularTags(limit: Int = 10): List<Tag> = suspendTransaction {
         WallpaperTags
             .select(WallpaperTags.tag, WallpaperTags.tag.count())
             .groupBy(WallpaperTags.tag)
@@ -209,13 +210,13 @@ object WallpaperRepository {
             .map { Tag(it[WallpaperTags.tag], it[WallpaperTags.tag.count()].toInt()) }
     }
 
-    fun getWallpapersByTag(tag: String, page: Int = 1, pageSize: Int = 20): List<Wallpaper> = transaction {
+    suspend fun getWallpapersByTag(tag: String, page: Int = 1, pageSize: Int = 20): List<Wallpaper> = suspendTransaction {
         val wallpaperIds = WallpaperTags
             .select(WallpaperTags.wallpaperId)
             .where { WallpaperTags.tag eq tag.lowercase() }
             .map { it[WallpaperTags.wallpaperId].value }
 
-        if (wallpaperIds.isEmpty()) return@transaction emptyList()
+        if (wallpaperIds.isEmpty()) return@suspendTransaction emptyList()
 
         WallpaperEntity.find { Wallpapers.id inList wallpaperIds }
             .orderBy(Wallpapers.createdAt to SortOrder.DESC)
@@ -223,7 +224,7 @@ object WallpaperRepository {
             .map { it.toWallpaper() }
     }
 
-    fun getWallpaperCountByTag(tag: String): Int = transaction {
+    suspend fun getWallpaperCountByTag(tag: String): Int = suspendTransaction {
         WallpaperTags
             .select(WallpaperTags.wallpaperId)
             .where { WallpaperTags.tag eq tag.lowercase() }
@@ -261,6 +262,8 @@ object WallpaperRepository {
             thumbnailUrl = StorageConfig.getThumbnailUrl(thumbnailFilename ?: filename),
             categoryId = category.id.value,
             categoryName = category.name,
+            artistId = artist?.id?.value,
+            artistName = artist?.name,
             tags = tags,
             colors = colorList,
             width = width,

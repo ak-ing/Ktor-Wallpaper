@@ -2,8 +2,11 @@ package com.aking.database
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.Transaction
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
@@ -44,9 +47,25 @@ object DatabaseConfig {
         transaction {
             SchemaUtils.create(
                 Categories,
+                Artists,
                 Wallpapers,
-                WallpaperTags
+                WallpaperTags,
+                ArtistSponsorPackages,
+                SponsorOrders,
+                Donations,
+                Collections,
+                CollectionWallpapers
             )
         }
     }
 }
+
+/**
+ * 协程安全的数据库事务
+ * 将阻塞的数据库操作转移到 IO 调度器执行，避免阻塞主线程
+ *
+ * @param block 事务代码块
+ * @return 事务执行结果
+ */
+suspend fun <T> suspendTransaction(block: Transaction.() -> T): T =
+    newSuspendedTransaction(Dispatchers.IO, statement = block)

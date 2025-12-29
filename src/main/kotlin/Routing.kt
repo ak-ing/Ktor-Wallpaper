@@ -44,6 +44,18 @@ fun Application.configureRouting() {
             // 文件上传接口
             uploadRoutes()
 
+            // 艺术家相关接口
+            artistRoutes()
+
+            // 专题/合集相关接口
+            collectionRoutes()
+
+            // 打赏相关接口
+            donationRoutes()
+
+            // 赞助相关接口
+            sponsorRoutes()
+
             // 管理接口 (CRUD)
             adminRoutes()
         }

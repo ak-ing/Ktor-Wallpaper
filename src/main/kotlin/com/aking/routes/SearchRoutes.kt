@@ -1,5 +1,7 @@
 package com.aking.routes
 
+import com.aking.data.ArtistRepository
+import com.aking.data.CollectionRepository
 import com.aking.data.WallpaperRepository
 import com.aking.model.*
 import io.ktor.server.routing.*
@@ -9,7 +11,7 @@ import io.ktor.server.routing.*
  */
 fun Route.searchRoutes() {
     route("/search") {
-        // GET /api/search?q=query - 搜索壁纸
+        // GET /api/search?q=query - 搜索壁纸、艺术家、专题
         // 支持按名称、分类、标签搜索
         get {
             val query = call.request.queryParameters["q"]
@@ -18,7 +20,16 @@ fun Route.searchRoutes() {
             }
 
             val wallpapers = WallpaperRepository.searchWallpapers(query)
-            call.success(SearchResponse(wallpapers, query, wallpapers.size))
+            val artists = ArtistRepository.searchArtists(query)
+            val collections = CollectionRepository.searchCollections(query)
+
+            call.success(SearchResponse(
+                wallpapers = wallpapers,
+                artists = artists,
+                collections = collections,
+                query = query,
+                total = wallpapers.size + artists.size + collections.size
+            ))
         }
     }
 
