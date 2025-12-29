@@ -1,39 +1,55 @@
-# ktor-wallpaper
+# Ktor Wallpaper
 
-This project was created using the [Ktor Project Generator](https://start.ktor.io).
+壁纸 App 服务端 REST API，基于 Ktor 框架开发。
 
-Here are some useful links to get you started:
+## 功能特性
 
-- [Ktor Documentation](https://ktor.io/docs/home.html)
-- [Ktor GitHub page](https://github.com/ktorio/ktor)
-- The [Ktor Slack chat](https://app.slack.com/client/T09229ZC6/C0A974TJ9). You'll need to [request an invite](https://surveys.jetbrains.com/s3/kotlin-slack-sign-up) to join.
+- 壁纸管理（列表、精选、编辑推荐、最新）
+- 分类管理
+- 艺术家管理
+- 专题/合集管理
+- 搜索和标签
+- 打赏和赞助功能
+- 管理后台接口
 
-## Features
+## 技术栈
 
-Here's a list of features included in this project:
+- Kotlin 2.1
+- Ktor 3.0.3
+- Exposed ORM
+- PostgreSQL
+- HikariCP 连接池
+- kotlinx.serialization
 
-| Name                                               | Description                                                 |
-| ----------------------------------------------------|------------------------------------------------------------- |
-| [Routing](https://start.ktor.io/p/routing-default) | Allows to define structured routes and associated handlers. |
+## 运行项目
 
-## Building & Running
+```bash
+# 运行服务器 (端口 8080)
+./gradlew run
 
-To build or run the project, use one of the following tasks:
+# 构建项目
+./gradlew build
 
-| Task                                    | Description                                                          |
-| -----------------------------------------|---------------------------------------------------------------------- |
-| `./gradlew test`                        | Run the tests                                                        |
-| `./gradlew build`                       | Build everything                                                     |
-| `./gradlew buildFatJar`                 | Build an executable JAR of the server with all dependencies included |
-| `./gradlew buildImage`                  | Build the docker image to use with the fat JAR                       |
-| `./gradlew publishImageToLocalRegistry` | Publish the docker image locally                                     |
-| `./gradlew run`                         | Run the server                                                       |
-| `./gradlew runDocker`                   | Run using the local docker image                                     |
+# 运行测试
+./gradlew test
 
-If the server starts successfully, you'll see the following output:
+# 构建 Fat JAR
+./gradlew buildFatJar
 
+# 构建 Docker 镜像
+./gradlew buildImage
 ```
-2024-12-04 14:32:45.584 [main] INFO  Application - Application started in 0.303 seconds.
-2024-12-04 14:32:45.682 [main] INFO  Application - Responding at http://0.0.0.0:8080
+
+## 环境变量
+
+```bash
+DATABASE_URL=jdbc:postgresql://localhost:5432/wallpaper
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+STORAGE_TYPE=LOCAL  # 或 COS
+SERVER_BASE_URL=http://localhost:8080
 ```
 
+## API 文档
+
+详见 [API.md](./API.md)
