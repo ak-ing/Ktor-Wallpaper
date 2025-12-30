@@ -1,5 +1,3 @@
-package com.aking
-
 import com.aking.database.DatabaseConfig
 import com.aking.model.ApiException
 import com.aking.model.ApiResult

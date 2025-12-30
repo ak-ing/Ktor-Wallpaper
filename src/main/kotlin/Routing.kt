@@ -1,5 +1,3 @@
-package com.aking
-
 import com.aking.config.StorageConfig
 import com.aking.config.StorageType
 import com.aking.routes.*

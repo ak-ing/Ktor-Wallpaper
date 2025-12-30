@@ -1,6 +1,7 @@
 package com.aking.data
 
 import com.aking.config.StorageConfig
+import com.aking.data.EntityMappers.toWallpaper
 import com.aking.database.*
 import com.aking.model.*
 import kotlinx.datetime.Clock
@@ -240,38 +241,6 @@ object WallpaperRepository {
             name = name,
             thumbnailUrl = thumbnailUrl,
             wallpaperCount = count
-        )
-    }
-
-    private fun WallpaperEntity.toWallpaper(): Wallpaper {
-        val tags = WallpaperTags
-            .select(WallpaperTags.tag)
-            .where { WallpaperTags.wallpaperId eq this@toWallpaper.id }
-            .map { it[WallpaperTags.tag] }
-
-        val colorList: List<String> = try {
-            json.decodeFromString(colors)
-        } catch (e: Exception) {
-            emptyList()
-        }
-
-        return Wallpaper(
-            id = id.value,
-            name = name,
-            url = StorageConfig.getWallpaperUrl(filename),
-            thumbnailUrl = StorageConfig.getThumbnailUrl(thumbnailFilename ?: filename),
-            categoryId = category.id.value,
-            categoryName = category.name,
-            artistId = artist?.id?.value,
-            artistName = artist?.name,
-            tags = tags,
-            colors = colorList,
-            width = width,
-            height = height,
-            downloads = downloads,
-            isFeatured = isFeatured,
-            isEditorsChoice = isEditorsChoice,
-            createdAt = createdAt.toEpochMilliseconds()
         )
     }
 }

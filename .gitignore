@@ -105,4 +105,4 @@ fabric.properties
 .env
 .env.*
 logs/
-data/
+/data/
