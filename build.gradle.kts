@@ -8,7 +8,7 @@ group = "com.aking"
 version = "1.0.0"
 
 application {
-    mainClass = "com.aking.ApplicationKt"
+    mainClass = "ApplicationKt"
 }
 
 dependencies {
