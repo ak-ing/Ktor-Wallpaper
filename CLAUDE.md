@@ -33,24 +33,24 @@ Ktor REST API server for a wallpaper mobile app. Features wallpapers, categories
 
 ## Key Patterns
 
-**Unified API Response:** All endpoints use standardized response helpers from `Models.kt`:
+**Unified API Response:** All endpoints use standardized response helpers from `ApiResult.kt`:
 ```kotlin
 call.success(data)                    // 200 OK with data
 call.success<Unit>(message = "...")   // 200 OK message only
 call.created(data, "message")         // 201 Created
-badRequest("error message")           // 400 throws exception
-notFound("error message")             // 404 throws exception
+badRequest("error message")           // 400 throws ApiException
+notFound("error message")             // 404 throws ApiException
 ```
 
 **Pagination:** List endpoints support `?page=1&pageSize=20`, return `PageData<T>` wrapper.
 
 **Storage Abstraction:** `StorageConfig` reads `STORAGE_TYPE` env var (LOCAL or COS). URL generation via `getWallpaperUrl()`/`getThumbnailUrl()`.
 
-**Repository Pattern:** Singleton objects with Exposed transaction blocks:
+**Repository Pattern:** Singleton objects with Exposed transaction blocks. Entity-to-Model conversions centralized in `EntityMappers.kt`:
 ```kotlin
 object WallpaperRepository {
     fun getAllWallpapers(page: Int, pageSize: Int) = transaction {
-        WallpaperEntity.all().limit(pageSize).offset(offset).map { it.toModel() }
+        WallpaperEntity.all().limit(pageSize).offset(offset).map { it.toWallpaper() }
     }
 }
 ```
